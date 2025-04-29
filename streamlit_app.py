@@ -30,6 +30,6 @@ st.markdown(
     "## 🚀 Get Started"
 )
 st.markdown(
-    "[👉 Go to Equity Insight Workbench](Equity Insight Workbench.py)"
+    "[👉 Go to Equity Insight Workbench]"
 )
 
