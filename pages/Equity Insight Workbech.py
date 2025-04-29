@@ -361,7 +361,7 @@ with tab3:
             )
             st.plotly_chart(fig_snap, use_container_width=True)
 
-            st.markdown("### 🧾 Key Financials")
+            st.markdown("### 🧾 Key Metrics")
             def safe_fmt(val, pct=False):
                 if val is None or val=="N/A": return "N/A"
                 return f"{val*100:.2f}%" if pct else f"${val:.2f}" if isinstance(val,(int,float)) else val
