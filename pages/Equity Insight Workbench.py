@@ -314,41 +314,48 @@ with tab2:
 
         # ── Interactive price comparison ────────────────────────────
         st.subheader(f"📈 {ticker_input}: Model vs Actual Price (t → t + 1)")
-        x_model = price_df["Year"]
-        y_model = price_df["Model Price"]
-        x_actual = price_df["Year"]
+        
+        # x-axis for each series
+        x_actual = price_df["Year"]                      # t
         y_actual = price_df["Actual Price"]
-
+        
+        x_model  = x_actual + 1                          # t + 1
+        y_model  = price_df["Model Price"]
+        
+        import plotly.graph_objects as go
         fig_bt = go.Figure()
+        
+        # Model (predicted for next year)
         fig_bt.add_trace(
             go.Scatter(
                 x=x_model,
                 y=y_model,
                 mode="lines+markers",
-                name="Model",
+                name="Model (predicted t → t+1)",
                 marker=dict(symbol="square"),
                 line=dict(width=2),
-                hovertemplate="Model: $%{y:.2f}<extra></extra>",
             )
         )
+        
+        # Actual (realised in year t)
         fig_bt.add_trace(
             go.Scatter(
                 x=x_actual,
                 y=y_actual,
                 mode="lines+markers",
-                name="Actual",
+                name="Actual Price (t)",
                 marker=dict(symbol="circle"),
                 line=dict(width=2, dash="dash"),
-                hovertemplate="Actual: $%{y:.2f}<extra></extra>",
             )
         )
-
+        
+        # Layout tweaks
         fig_bt.update_layout(
             height=450,
             xaxis_title="Fiscal Year",
             yaxis_title="Share Price ($)",
             hovermode="x unified",
-            xaxis=dict(dtick=1),
+            xaxis=dict(dtick=1),                 # one tick per year
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
@@ -358,7 +365,7 @@ with tab2:
             ),
             margin=dict(l=40, r=40, t=40, b=40),
         )
-
+        
         st.plotly_chart(fig_bt, use_container_width=True)
 
         # ── Hit-rate calculation ────────────────────────────────────
