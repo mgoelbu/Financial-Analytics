@@ -107,7 +107,7 @@ with tab1:
             if logo_url:
                 st.image(logo_url, width=50)
         with col2:
-            st.subheader(f"{company_name} ({ticker_input.upper()})")
+            st.subheader(f"Details for: {ticker_input}")
 
         # Peers in same gsubind
         peer_indices = gsubind_data[gsubind_data == company_gsubind].index
