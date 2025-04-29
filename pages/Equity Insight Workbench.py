@@ -241,23 +241,82 @@ with tab2:
         })
         price_df["Prediction"] = np.where(model_price > actual_price, "Up", "Down")
 
-        # 1-Year-Ahead Chart
-        st.subheader(f"📈 {ticker_input}: Model vs Actual Price (1-Year Ahead)")
-        years_actual  = price_df["Year"]
-        prices_actual = price_df["Actual Price"]
-        years_model   = years_actual + 1
-        prices_model  = price_df["Model Price"]
+        # ── Interactive 1-Year-Ahead Price Comparison ─────────────────────────────
+        st.subheader(f"📈 {ticker_input}: Model vs Actual Price (t → t + 1)")
+        
+        # 1) Build a tidy DataFrame
+        plot_df = pd.DataFrame({
+            "Year_t"          : price_df["Year"],              # 2010 … 2024
+            "ModelPrice_t"    : price_df["Model Price"],
+            "ActualPrice_t"   : price_df["Actual Price"],
+        }).dropna(subset=["ModelPrice_t", "ActualPrice_t"])
+        
+        # shift actual price forward one year so axes line up
+        plot_df["Year_tplus1"]      = plot_df["Year_t"] + 1
+        plot_df["ActualPrice_t+1"]  = plot_df["ActualPrice_t"].shift(-1)
+        plot_df = plot_df.dropna(subset=["ActualPrice_t+1"])   # keep valid pairs
+        
+        import plotly.graph_objects as go
+        
+        fig_bt = go.Figure()
+        
+        # 2) Model-implied price curve (drawn at t+1)
+        fig_bt.add_trace(
+            go.Scatter(
+                x=plot_df["Year_tplus1"],
+                y=plot_df["ModelPrice_t"],
+                mode="lines+markers",
+                name="Model (predicted t+1)",
+                marker=dict(symbol="square"),
+                line=dict(width=2),
+            )
+        )
+        
+        # 3) Realised price curve
+        fig_bt.add_trace(
+            go.Scatter(
+                x=plot_df["Year_tplus1"],
+                y=plot_df["ActualPrice_t+1"],
+                mode="lines+markers",
+                name="Actual Price",
+                marker=dict(symbol="circle"),
+                line=dict(width=2, dash="dash"),
+            )
+        )
+        
+        # 4) Optional shaded error band (gap between the two curves)
+        fig_bt.add_trace(
+            go.Scatter(
+                x=pd.concat([plot_df["Year_tplus1"],
+                             plot_df["Year_tplus1"][::-1]]),
+                y=pd.concat([plot_df["ModelPrice_t"],
+                             plot_df["ActualPrice_t+1"][::-1]]),
+                fill="toself",
+                fillcolor="rgba(0, 119, 204, 0.10)",
+                line=dict(color="rgba(0,0,0,0)"),
+                hoverinfo="skip",
+                showlegend=False,
+            )
+        )
+        
+        # 5) Layout tune-ups
+        fig_bt.update_layout(
+            height=450,
+            xaxis_title="Fiscal Year (t + 1)",
+            yaxis_title="Share Price ($)",
+            hovermode="x unified",
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+            ),
+            margin=dict(l=40, r=40, t=40, b=40),
+        )
+        
+        st.plotly_chart(fig_bt, use_container_width=True)
 
-        fig, ax = plt.subplots(figsize=(10, 5))
-        ax.plot(years_model, prices_model, marker="s", label="Model (t→t+1)")
-        ax.plot(years_actual, prices_actual, marker="o", label="Actual (t)")
-        ax.set_title(f"{ticker_input} Price Comparison")
-        ax.set_xlabel("Year"); ax.set_ylabel("Price")
-        ax.grid(True, linestyle="--", alpha=0.5)
-        xticks = list(range(int(years_actual.min()), int(years_model.max())+1))
-        ax.set_xticks(xticks); plt.xticks(rotation=45)
-        ax.legend()
-        st.pyplot(fig)
 
         # Hit-Rate Calculation
         total_predictions = 0
