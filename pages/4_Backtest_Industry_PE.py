@@ -13,7 +13,7 @@ def load_data():
     company_data = company_data.iloc[4:].reset_index(drop=True)
 
     eps_data = company_data.iloc[:, 9:24].apply(pd.to_numeric, errors='coerce')
-    price_data = company_data.iloc[:, 24:39].apply(pd.to_numeric, errors='coerce')
+    price_data = company_data.iloc[:, 25:40].apply(pd.to_numeric, errors='coerce')
     eps_data.columns = list(range(2010, 2025))
     price_data.columns = list(range(2010, 2025))
 
