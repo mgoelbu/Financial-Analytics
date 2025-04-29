@@ -27,7 +27,7 @@ st.markdown("---")
 st.subheader("📊 Data Universe & Sample Size")
 st.markdown(
     """
-    - **Total Universe:** `4,455` tickers (all publicly listed companies we track)
+    - **Total Universe:** st.subheader(`4,455`) tickers (all publicly listed companies we track)
     - **Historical Data Points:** `15` years of annual EPS and price data per ticker, equating to `133,650` data points
     - **Backtest Samples:** Ultimately we went ahead with `205 tickers` and `6,150` data points for our project prototype to evalaute one and two-year directional predictions
 
