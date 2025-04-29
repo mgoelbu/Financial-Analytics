@@ -22,14 +22,23 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ─── Link to Main App ──────────────────────────────────────────────────────────
+# ─── Data Universe Summary ─────────────────────────────────────────────────────
+st.markdown("---")
+st.subheader("📊 Data Universe & Sample Size")
 st.markdown(
-    "---"
-)
-st.markdown(
-    "## 🚀 Get Started"
-)
-st.markdown(
-    "[👉 Go to Equity Insight Workbench]"
+    """
+    - **Total Universe:** `4455` tickers (all publicly listed companies we track)
+    - **Historical Data Points:** `{TOTAL_YEARS}` years of annual EPS and price data per ticker
+    - **Backtest Samples:** `{TOTAL_PREDICTIONS}` one- and two-year directional predictions evaluated
+
+    _Fill in the placeholders above with your actual numbers._
+    """,
+    unsafe_allow_html=True
 )
 
+# ─── Link to Main App ──────────────────────────────────────────────────────────
+st.markdown("---")
+st.markdown("## 🚀 Get Started")
+st.markdown(
+    "[👉 Go to Equity Insight Workbench](Equity Insight Workbench.py)"
+)
