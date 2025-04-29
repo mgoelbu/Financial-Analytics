@@ -37,12 +37,8 @@ c1.metric("Tickers Tracked",  "4,455")
 c2.metric("Years of History", "15")
 c3.metric("Raw Data Points",  "133,650")
 c4.metric("Back-test Samples", "6,150")
-c5.metric("Training Period", "15 years")
+c5.metric("No. of Factors", "2: Price and Earnings")
 
-st.caption(
-    "Raw data points = EPS and price pairs (15 years × 4,455 tickers). "
-    "Back-test samples equal 205 tickers × 30 predictions."
-)
 
 # bump the value font a bit larger
 st.markdown(
