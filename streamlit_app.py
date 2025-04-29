@@ -31,13 +31,12 @@ st.markdown(
 st.markdown("---")
 st.subheader("📊 Data Universe & Sample Size")
 
-c1, c2, c3, c4, c5 = st.columns(5)
+c1, c2, c3, c4 = st.columns(4)
 
 c1.metric("Tickers Tracked",  "4,455")
 c2.metric("Years of History", "15")
 c3.metric("Raw Data Points",  "133,650")
 c4.metric("Back-test Samples", "6,150")
-c5.metric("No. of Factors", "2: Price and Earnings")
 
 
 # bump the value font a bit larger
