@@ -282,6 +282,11 @@ with tab2:
 
         gsubind_hit_rate = (gsubind_correct/gsubind_total*100) if gsubind_total else np.nan
         st.subheader(f"🏆 {industry} Industry Hit Rate Comparison")
+        st.markdown(f"**Your Stock Hit Rate:** {overall_hit_rate:.2f}%")
+        if not np.isnan(gsubind_hit_rate):
+            st.success(f"🏆 Industry Average Hit Rate: **{gsubind_hit_rate:.2f}%**")
+        else:
+            st.warning("Not enough data for gsubind hit rate.")
         st.markdown(
             f"""
             **What this means:**  
