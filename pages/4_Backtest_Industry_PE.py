@@ -86,7 +86,7 @@ if ticker_input and (ticker_input in ticker_data.values):
     industry = company_data.loc[idx, "Industry"]
 
     st.subheader(f"Details for: {ticker_input}")
-    st.write(f"**gsubind:** 🧭 {gsubind}   **Industry:** {industry}")
+    st.write(f"**gsubind:** {gsubind}   **Industry:** {industry}")
 
     # ▶️ Competitors
     all_peers   = ticker_data[gsubind_data == gsubind].tolist()
