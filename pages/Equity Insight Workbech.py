@@ -101,10 +101,10 @@ with tab1:
         peers = ticker_data.loc[peer_indices].tolist()
 
         # Sector & Industry
-        sector   = company_data.loc[idx, 'Sector']   if 'Sector'   in company_data.columns else "N/A"
+        
         industry = company_data.loc[idx, 'Industry'] if 'Industry' in company_data.columns else "N/A"
 
-        st.markdown(f"**Sector:** {sector}  ")
+        
         st.markdown(f"**Industry:** {industry}  ")
         st.markdown(f"**Peers:** {', '.join(peers)}")
 
