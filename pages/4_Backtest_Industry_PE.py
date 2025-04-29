@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 # 📥 Load Data
 @st.cache_data
@@ -220,3 +221,47 @@ if ticker_input:
 
     else:
         st.warning("Ticker not found. Please check again.")
+
+
+
+# ▶️ Detailed line chart with annotations
+st.subheader(f"📈 {ticker_input} – Model vs. Actual Price")
+
+fig, ax = plt.subplots()
+
+# Plot lines with markers
+ax.plot(
+    price_df["Year"],
+    price_df["Model Price"],
+    marker="o",
+    label="Model"
+)
+ax.plot(
+    price_df["Year"],
+    price_df["Actual Price"],
+    marker="o",
+    label="Actual"
+)
+
+# Annotate each point
+for x, y in zip(price_df["Year"], price_df["Model Price"]):
+    ax.annotate(f"{y:.2f}", (x, y),
+                textcoords="offset points",
+                xytext=(0, 6),
+                ha="center")
+
+for x, y in zip(price_df["Year"], price_df["Actual Price"]):
+    ax.annotate(f"{y:.2f}", (x, y),
+                textcoords="offset points",
+                xytext=(0, -10),
+                ha="center")
+
+# Axis labels and legend
+ax.set_xlabel("Year")
+ax.set_ylabel("Price")
+ax.set_xticks(price_df["Year"])
+ax.legend()
+
+# Render in Streamlit
+st.pyplot(fig)
+
