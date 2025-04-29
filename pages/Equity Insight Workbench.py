@@ -279,7 +279,22 @@ with tab2:
                 hovertemplate="Actual: $%{y:.2f}<extra></extra>",
             )
         )
-        
+
+        fig_bt.add_trace(
+            go.Scatter(
+                x=pd.concat([x_model, x_actual[::-1]]),      # forward then reverse
+                y=pd.concat([y_model, y_actual[::-1]]),      # creates closed polygon
+                fill="toself",
+                fillcolor="rgba(0, 119, 204, 0.12)",         # light blue, ~12 % opacity
+                line=dict(width=0),                          # no border line
+                hoverinfo="skip",                            # avoid duplicate tool-tips
+                showlegend=False,
+            )
+        )    
+
+
+
+            
         # Layout tweaks
         fig_bt.update_layout(
             height=450,
