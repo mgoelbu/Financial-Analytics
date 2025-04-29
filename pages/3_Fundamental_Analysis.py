@@ -1,17 +1,30 @@
+# 1_Financial_Fundamentals.py
 import streamlit as st
 import yfinance as yf
+import pandas as pd
 
 st.set_page_config(layout="wide")
 st.title("📂 Financial Fundamentals")
 
-ticker_input = st.text_input("Enter a ticker symbol", "DELL")
+ticker_input = st.text_input("Enter a ticker symbol", "DELL").upper()
 
 if ticker_input:
-    ticker = yf.Ticker(ticker_input.upper())
-    info = ticker.info
+    ticker = yf.Ticker(ticker_input)
 
-    st.markdown(f"### {info.get('longName', ticker_input.upper())} ({ticker_input.upper()})")
+    # 1) Pull the 4 financial tables:
+    fin  = ticker.financials        # Income statement (TTM)
+    bal  = ticker.balance_sheet     # Balance sheet (TTM)
+    cf   = ticker.cashflow          # Cash flow (TTM)
+    info = ticker.info              # for ratios, growth, etc.
 
+    # helper to safely pick the most recent column, or 0 if missing
+    def most_recent(df, line_item):
+        try:
+            return df.loc[line_item].dropna().iloc[0]
+        except Exception:
+            return 0
+
+    # ── Tabs ──────────────────────────────────────────────────────────
     tab1, tab2, tab3, tab4 = st.tabs([
         "📊 Income Statement",
         "📉 Balance Sheet",
@@ -19,41 +32,66 @@ if ticker_input:
         "📈 Growth & Ratios"
     ])
 
-    # ========== Income Statement ==========
+    # ========== Income Statement ==========  
     with tab1:
         st.subheader("📊 Key Income Metrics")
-        st.metric("Revenue (TTM)", f"${info.get('totalRevenue', 0)/1e9:.2f}B")
-        st.metric("Gross Profit (TTM)", f"${info.get('grossProfits', 0)/1e9:.2f}B")
-        st.metric("EBITDA", f"${info.get('ebitda', 0)/1e9:.2f}B")
-        st.metric("Net Income", f"${info.get('netIncomeToCommon', 0)/1e9:.2f}B")
-        st.metric("Profit Margin", f"{info.get('profitMargins', 0)*100:.2f}%")
+        rev      = most_recent(fin, "Total Revenue")
+        gross    = most_recent(fin, "Gross Profit")
+        ebitda   = most_recent(fin, "Ebitda")
+        net_inc  = most_recent(fin, "Net Income") or most_recent(fin, "Net Income Applicable To Common Shares")
+        margin   = info.get("profitMargins", 0) * 100
 
-    # ========== Balance Sheet ==========
+        st.metric("Revenue (TTM)",       f"${rev/1e9:.2f}B")
+        st.metric("Gross Profit (TTM)",  f"${gross/1e9:.2f}B")
+        st.metric("EBITDA (TTM)",        f"${ebitda/1e9:.2f}B")
+        st.metric("Net Income (TTM)",    f"${net_inc/1e9:.2f}B")
+        st.metric("Profit Margin (TTM)", f"{margin:.2f}%")
+
+    # ========== Balance Sheet ==========  
     with tab2:
         st.subheader("📉 Key Balance Sheet Metrics")
-        st.metric("Total Assets", f"${info.get('totalAssets', 0)/1e9:.2f}B")
-        st.metric("Total Liabilities", f"${info.get('totalLiab', 0)/1e9:.2f}B")
-        st.metric("Shareholder Equity", f"${info.get('totalStockholderEquity', 0)/1e9:.2f}B")
-        st.metric("Current Ratio", f"{info.get('currentRatio', 0):.2f}")
-        st.metric("Debt to Equity", f"{info.get('debtToEquity', 0):.2f}")
+        assets    = most_recent(bal, "Total Assets")
+        liab      = most_recent(bal, "Total Liab")
+        equity    = most_recent(bal, "Total Stockholder Equity")
+        current   = info.get("currentRatio", 0)
+        d2e       = info.get("debtToEquity", 0)
 
-    # ========== Cash Flow ==========
+        st.metric("Total Assets",        f"${assets/1e9:.2f}B")
+        st.metric("Total Liabilities",   f"${liab/1e9:.2f}B")
+        st.metric("Shareholder Equity",  f"${equity/1e9:.2f}B")
+        st.metric("Current Ratio",       f"{current:.2f}")
+        st.metric("Debt to Equity",      f"{d2e:.2f}")
+
+    # ========== Cash Flow ==========  
     with tab3:
         st.subheader("💵 Key Cash Flow Metrics")
-        st.metric("Operating Cash Flow", f"${info.get('operatingCashflow', 0)/1e9:.2f}B")
-        st.metric("Capital Expenditures", f"${info.get('capitalExpenditures', 0)/1e9:.2f}B")
-        st.metric("Free Cash Flow", f"${info.get('freeCashflow', 0)/1e9:.2f}B")
+        op_cf     = most_recent(cf, "Operating Cash Flow")
+        capex     = most_recent(cf, "Capital Expenditures")
+        free_cf   = op_cf + capex    # yfinance cashflow is negative on capex already
 
-    # ========== Growth & Ratios ==========
+        st.metric("Operating Cash Flow", f"${op_cf/1e9:.2f}B")
+        st.metric("Capital Expenditures", f"${-capex/1e9:.2f}B")
+        st.metric("Free Cash Flow",      f"${free_cf/1e9:.2f}B")
+
+    # ========== Growth & Ratios ==========  
     with tab4:
         st.subheader("📈 Growth & Efficiency Metrics")
-        st.metric("Return on Assets (ROA)", f"{info.get('returnOnAssets', 0)*100:.2f}%")
-        st.metric("Return on Equity (ROE)", f"{info.get('returnOnEquity', 0)*100:.2f}%")
-        st.metric("Revenue Growth (YoY)", f"{info.get('revenueGrowth', 0)*100:.2f}%")
-        st.metric("Earnings Growth (YoY)", f"{info.get('earningsGrowth', 0)*100:.2f}%")
-        st.metric("P/E Ratio (TTM)", f"{info.get('trailingPE', 0):.2f}")
-        st.metric("Price to Book", f"{info.get('priceToBook', 0):.2f}")
-        st.metric("EV/EBITDA", f"{info.get('enterpriseToEbitda', 0):.2f}")
-        st.metric("Price to Sales", f"{info.get('priceToSalesTrailing12Months', 0):.2f}")
+        roa   = info.get("returnOnAssets", 0) * 100
+        roe   = info.get("returnOnEquity", 0) * 100
+        rev_g = info.get("revenueGrowth", 0) * 100
+        eps_g = info.get("earningsGrowth", 0) * 100
+        pe    = info.get("trailingPE", 0)
+        pb    = info.get("priceToBook", 0)
+        ev_eb = info.get("enterpriseToEbitda", 0)
+        ps    = info.get("priceToSalesTrailing12Months", 0)
+
+        st.metric("ROA",        f"{roa:.2f}%")
+        st.metric("ROE",        f"{roe:.2f}%")
+        st.metric("Rev Growth", f"{rev_g:.2f}%")
+        st.metric("EPS Growth", f"{eps_g:.2f}%")
+        st.metric("P/E Ratio",  f"{pe:.2f}")
+        st.metric("P/B Ratio",  f"{pb:.2f}")
+        st.metric("EV/EBITDA",  f"{ev_eb:.2f}")
+        st.metric("P/S Ratio",  f"{ps:.2f}")
 
     st.caption("📌 Data sourced from Yahoo Finance via yfinance")
