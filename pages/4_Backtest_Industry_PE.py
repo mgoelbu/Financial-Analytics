@@ -61,7 +61,10 @@ years = list(range(2010, 2025))
 
 # 📊 Streamlit App
 st.title("📊 Company Stock Valuation Analysis")
-ticker_input = st.text_input("Enter Ticker (e.g., AAPL, DELL, TSLA)").upper()
+# ▶️ Let user pick from the known universe
+tickers = ticker_data.tolist()
+ticker_input = st.selectbox("Choose a ticker", options=tickers)
+
 
 if ticker_input:
     if ticker_input in ticker_data.values:
