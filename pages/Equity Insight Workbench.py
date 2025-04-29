@@ -131,6 +131,14 @@ with tab1:
 
         eps_2024      = eps_data.loc[idx, 2024]
         current_price = price_data.loc[idx, 2024]
+        try:
+            current_price = info.get("regularMarketPrice")
+            if current_price is None:
+                hist = ticker_obj.history(period="1d")   # 1 trading day
+                current_price = hist["Close"][-1] if not hist.empty else np.nan
+        except Exception:
+            current_price = np.nan
+            
         eps_valid     = (eps_2024 > 0) and not np.isnan(eps_2024)
 
         if eps_valid and not valid_peer_pe.empty:
@@ -146,7 +154,7 @@ with tab1:
         c1, c2, c3 = st.columns(3)
         c1.metric("Last Reported EPS", f"{eps_2024:.2f}" if eps_valid else "N/A")
         c2.metric("Industry Median P/E", f"{industry_pe_avg:.2f}" if not np.isnan(industry_pe_avg) else "N/A")
-        c3.metric("Current Price (2025)", f"${current_price:.2f}" if not np.isnan(current_price) else "N/A")
+        c3.metric("Current Price", f"${current_price:.2f}" if not np.isnan(current_price) else "N/A")
 
         # Recommendation
         st.subheader("✅ Recommendation")
