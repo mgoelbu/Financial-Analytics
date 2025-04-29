@@ -300,11 +300,6 @@ with tab2:
             industry; a lower value suggests it’s more of a coin-flip.
             """
         )
-        st.markdown(f"**Your Stock Hit Rate:** {overall_hit_rate:.2f}%")
-        if not np.isnan(gsubind_hit_rate):
-            st.success(f"🏆 Industry Average Hit Rate: **{gsubind_hit_rate:.2f}%**")
-        else:
-            st.warning("Not enough data for gsubind hit rate.")
 
         # 🌍 Global Model Accuracy (All Stocks)
         global_total = global_correct = 0
