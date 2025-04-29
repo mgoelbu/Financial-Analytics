@@ -251,12 +251,48 @@ with tab2:
 
         st.dataframe(price_df, use_container_width=True)
 
-        # 🔮 Final Prediction for 2024
+        # 🔮 Final Prediction for 2024 + Context & Confidence Band
         price_df.set_index("Year", inplace=True)
+
         if 2024 in price_df.index and not pd.isna(price_df.loc[2024, "Prediction"]):
-            st.success(f"🔮 Final Prediction for 2024: {price_df.loc[2024, 'Prediction']}")
+            pred_2024 = price_df.loc[2024, "Prediction"]
+            st.success(f"🔮 Final Prediction for 2024: **{pred_2024}**")
+
+            # 1️⃣ % gap between model and actual
+            model_24  = price_df.loc[2024, "Model Price"]
+            actual_24 = price_df.loc[2024, "Actual Price"]
+            gap_pct   = (model_24 - actual_24) / actual_24 * 100
+            st.markdown(f"• **Model vs Actual Gap:** {gap_pct:.1f}%")
+
+            # 2️⃣ Typical sub-industry error (±)
+            errors = []
+            for peer_idx in peer_indices:
+                peer_actual = actual_price_data.loc[ticker_data[peer_idx]]
+                peer_eps    = eps_data.loc[peer_idx].mask(eps_data.loc[peer_idx] <= 0)
+                peer_model  = peer_eps * pd.Series(
+                    gsubind_to_median_pe[gsubind], index=years
+                )
+                for yr in range(2010, 2024):
+                    if (pd.notna(peer_model.get(yr)) 
+                            and yr+1 in peer_actual.index 
+                            and pd.notna(peer_actual[yr+1])):
+                        err = abs((peer_model[yr] - peer_actual[yr+1]) 
+                                  / peer_actual[yr+1]) * 100
+                        errors.append(err)
+            if errors:
+                conf_band = np.nanmedian(errors)
+                st.markdown(f"• **Typical {industry} model error:** ±{conf_band:.1f}%")
+            else:
+                st.markdown("• _(Not enough data to compute sub-industry confidence band)_")
+
+            # 3️⃣ Caveat
+            st.caption(
+                "🔍 *Note: This is a point-in-time signal based solely on trailing EPS × median PE. "
+                "Consider forward-looking estimates, volatility, and macro factors before making any trade.*"
+            )
         else:
             st.warning("Prediction for 2024 not available.")
+
 
         # 🏆 Industry Average Hit Rate Comparison
         peer_indices  = gsubind_data[gsubind_data == gsubind].index
