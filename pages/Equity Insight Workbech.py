@@ -170,6 +170,14 @@ with tab1:
     else:
         st.error("❌ Ticker not found. Please check your selection.")
 
+
+with st.expander("🖥️  Show backend code"):
+    with open(__file__, "r") as f:          # __file__ = current .py file
+        source = f.read()
+    st.code(source, language="python")
+
+
+
 # ─── Tab 2: Backtest ───────────────────────────────────────────────────────────
 with tab2:
     st.title("📊 Company Stock Valuation Analysis")
