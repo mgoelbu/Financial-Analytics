@@ -96,23 +96,22 @@ if ticker_input:
         )
 
         # ▶️ Detailed line chart with annotations
-        st.subheader(f"📈 {ticker_input} – Model vs. Actual Price")
-        fig, ax = plt.subplots()
-        ax.plot(price_df["Year"], price_df["Model Price"],
-                marker="o", label="Model")
-        ax.plot(price_df["Year"], price_df["Actual Price"],
-                marker="o", label="Actual")
-        for x, y in zip(price_df["Year"], price_df["Model Price"]):
-            ax.annotate(f"{y:.2f}", (x, y),
-                        textcoords="offset points",
-                        xytext=(0, 6), ha="center")
-        for x, y in zip(price_df["Year"], price_df["Actual Price"]):
-            ax.annotate(f"{y:.2f}", (x, y),
-                        textcoords="offset points",
-                        xytext=(0, -10), ha="center")
+        st.subheader(f"📈 {ticker_input}: Model vs Actual Price")
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(price_df["Year"], price_df["Model Price"], marker="o", label="Model")
+        ax.plot(price_df["Year"], price_df["Actual Price"], marker="o", label="Actual")
+        
+        ax.set_title(f"{ticker_input} Price Comparison")
         ax.set_xlabel("Year")
         ax.set_ylabel("Price")
-        ax.set_xticks(price_df["Year"])
+        ax.grid(True, linestyle="--", alpha=0.5)
+        
+        # show every other year to avoid crowding
+        years = price_df["Year"].tolist()
+        ax.set_xticks(years[::2])
+        plt.xticks(rotation=45)
+        
         ax.legend()
         st.pyplot(fig)
 
