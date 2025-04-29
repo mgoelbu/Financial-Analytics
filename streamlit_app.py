@@ -40,5 +40,5 @@ unsafe_allow_html=True
 st.markdown("---")
 st.markdown("## 🚀 Get Started")
 st.markdown(
-"[👉 Go to Equity Insight Workbench](Equity Insight Workbench.py)"
+"[👉 Go to Equity Insight Workbench]"
 )
