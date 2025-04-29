@@ -70,6 +70,11 @@ if ticker_input:
         })
         price_df['Prediction'] = np.where(model_price > actual_price, 'Up', 'Down')
 
+        # ▶️ Visual: Model vs Actual Price over Time
+       st.subheader(f"📈 {ticker_input} – Model vs. Actual Price")
+       plot_df = price_df.set_index("Year")[["Model Price", "Actual Price"]]
+       st.line_chart(plot_df)
+        
         # 🎯 Hit Rate Calculation
         total_predictions = 0
         correct_predictions = 0
