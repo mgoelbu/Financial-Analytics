@@ -311,7 +311,7 @@ with tab2:
                     global_total += 1
 
         global_hit_rate = (global_correct/global_total*100) if global_total else np.nan
-        st.subheader("🌍 Overall Model Accuracy (All Stocks)")
+        st.subheader("🌍 Overall Model Accuracy (All Stocks considered in the Prototype Universe)")
         if not np.isnan(global_hit_rate):
             st.success(f"🌟 Global Model Accuracy: **{global_hit_rate:.2f}%**")
         else:
