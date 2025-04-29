@@ -131,9 +131,9 @@ with tab1:
         # Key Inputs
         st.subheader("📊 Key Valuation Inputs")
         c1, c2, c3 = st.columns(3)
-        c1.metric("EPS (2024)", f"{eps_2024:.2f}" if eps_valid else "N/A")
+        c1.metric("Last Reported EPS", f"{eps_2024:.2f}" if eps_valid else "N/A")
         c2.metric("Industry Median P/E", f"{industry_pe_avg:.2f}" if not np.isnan(industry_pe_avg) else "N/A")
-        c3.metric("Current Price (2024)", f"${current_price:.2f}" if not np.isnan(current_price) else "N/A")
+        c3.metric("Current Price (2025)", f"${current_price:.2f}" if not np.isnan(current_price) else "N/A")
 
         # Recommendation
         st.subheader("✅ Recommendation")
