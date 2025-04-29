@@ -179,7 +179,7 @@ with tab2:
         gsubind  = gsubind_data[idx]
         industry = company_data.loc[idx, "Industry"]
         st.subheader(f"Details for: {ticker_input}")
-        st.write(f"**gsubind:** 🧭 {gsubind}    **Industry:** {industry}")
+        st.write(f"**Industry:** {industry}")
 
         all_peers   = ticker_data[gsubind_data == gsubind].tolist()
         competitors = [t for t in all_peers if t != ticker_input]
