@@ -31,7 +31,7 @@ st.markdown(
 st.markdown("---")
 st.subheader("📊 Data Universe & Sample Size")
 
-c1, c2, c3, c4, c5 = st.columns(4)
+c1, c2, c3, c4, c5 = st.columns(5)
 
 c1.metric("Tickers Tracked",  "4,455")
 c2.metric("Years of History", "15")
