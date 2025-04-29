@@ -3,187 +3,137 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ─── Page config: MUST come first ──────────────────────────────────────────────
-st.set_page_config(
-    page_title="Valuation & Backtest",
-    layout="wide"
-)
+# Set Streamlit page config
+st.set_page_config(layout="wide")
+st.title("💸 Valuation Advisor")
 
-# ─── Data‐loading ──────────────────────────────────────────────────────────────
+# File path
+file_path = 'data/Master data price eps etc.xlsx'
+
+# Load data functions
 @st.cache_data
-def load_data():
-    file_path = 'data/Master data price eps etc.xlsx'
-
-    # --- Company Dta sheet
+def load_company_data():
     df = pd.read_excel(file_path, sheet_name='Company Dta', header=None)
-    df.columns = df.iloc[3]                   # row 4 as header
-    df = df.iloc[4:].reset_index(drop=True)   # drop above rows
+    headers = df.iloc[3]
+    df.columns = headers
+    df = df.iloc[4:].reset_index(drop=True)
+    return df
 
-    # --- EPS and Price blocks (2010–2024)
-    years      = list(range(2010, 2025))
-    eps        = df.iloc[:, 9:24].apply(pd.to_numeric, errors='coerce')
-    price      = df.iloc[:, 25:40].apply(pd.to_numeric, errors='coerce')
-    eps.columns, price.columns = years, years
+@st.cache_data
+def load_eps_price_data(df):
+    eps_data = df.iloc[:, 9:24].apply(pd.to_numeric, errors='coerce')
+    price_data = df.iloc[:, 24:39].apply(pd.to_numeric, errors='coerce')
+    eps_data.columns = list(range(2010, 2025))
+    price_data.columns = list(range(2010, 2025))
 
-    # --- Metadata columns
-    tickers    = df['Ticker'].reset_index(drop=True)
-    gsubinds   = df['gsubind'].reset_index(drop=True)
-    industries = df['Industry'].reset_index(drop=True)
+    ticker_data = df['Ticker'].reset_index(drop=True)
+    gsubind_data = df['gsubind'].reset_index(drop=True)
 
-    # --- Median PE mapping (same logic as Median PE sheet)
-    med = pd.read_excel(file_path, sheet_name='Median PE', header=None)
-    med_trim = med.iloc[5:, :18].reset_index(drop=True)
-    med_trim.columns = [None, None, 'gsubind'] + years
-    gsubind_to_medpe = {
-        row['gsubind']: row[3:].values
-        for _, row in med_trim.iterrows()
-    }
+    return eps_data, price_data, ticker_data, gsubind_data
 
-    # --- Actual price history from Analysis sheet
-    ana = pd.read_excel(file_path, sheet_name='Analysis', header=None)
-    ana_trim = ana.iloc[5:, :40].reset_index(drop=True)
-    actual_price = ana_trim.iloc[:, 24:39].apply(pd.to_numeric, errors='coerce')
-    actual_price.columns = years
-    actual_price.index = ana_trim.iloc[:, 0]
+# Load data
+company_data = load_company_data()
+eps_data, price_data, ticker_data, gsubind_data = load_eps_price_data(company_data)
 
-    return (
-        df, eps, price, tickers, gsubinds,
-        industries, gsubind_to_medpe, actual_price, years
-    )
+# Input
+ticker_input = st.text_input("Enter a ticker symbol", "DELL").upper()
 
-# load once
-(
-    company_df, eps_data, price_data, ticker_series,
-    gsubind_series, industry_series, medpe_map,
-    actual_price_data, years
-) = load_data()
+if ticker_input and ticker_input in ticker_data.values:
+    idx = ticker_data[ticker_data == ticker_input].index[0]
+    company_gsubind = gsubind_data[idx]
 
-# ─── Sidebar ticker picker ─────────────────────────────────────────────────────
-st.title("📊 P/E Valuation & Backtest Prototype")
-ticker = st.sidebar.selectbox("Select a ticker", ticker_series.tolist())
-if not ticker:
-    st.sidebar.warning("Please choose a ticker to continue.")
-    st.stop()
+    # Peers in same gsubind
+    peer_indices = gsubind_data[gsubind_data == company_gsubind].index
+    peers = ticker_data.loc[peer_indices].tolist()
 
-# common lookups
-idx      = ticker_series[ticker_series == ticker].index[0]
-gsubind  = gsubind_series[idx]
-industry = industry_series[idx]
-peer_idxs= gsubind_series[gsubind_series == gsubind].index
-peers    = ticker_series.loc[peer_idxs].tolist()
+    # Show sector/industry from company_data
+    sector = company_data.loc[idx, 'Sector'] if 'Sector' in company_data.columns else "N/A"
+    industry = company_data.loc[idx, 'Industry'] if 'Industry' in company_data.columns else "N/A"
 
-# ─── Tabs ──────────────────────────────────────────────────────────────────────
-tab_val, tab_bt = st.tabs(["Valuation Advisor", "Backtest Analysis"])
+    st.markdown(f"**Sector:** {sector}  ")
+    st.markdown(f"**Industry:** {industry}  ")
+    st.markdown(f"**Peers:** {', '.join(peers)}")
 
-# ── Tab 1: Valuation Advisor ──────────────────────────────────────────────────
-with tab_val:
-    st.subheader(f"Details for {ticker}")
-    st.write(f"**gsubind:** {gsubind}    **Industry:** {industry}")
-    st.write("**Peers:**", ", ".join([p for p in peers if p != ticker]) or "None")
+    # Calculate Median P/E for all peers
+    pe_ratio = price_data.divide(eps_data)
 
-    # latest year
-    val_yr = years[-1]
+    # ⚡ Remove negative and zero PEs
+    pe_ratio = pe_ratio.mask((pe_ratio <= 0) | (pe_ratio.isna()))
 
-    # build peer P/E table
-    pe_table = price_data.divide(eps_data).mask(lambda x: (x <= 0) | x.isna())
+    pe_ratio_with_gsubind = pe_ratio.copy()
+    pe_ratio_with_gsubind['gsubind'] = gsubind_data.values
 
-    peer_pes = pe_table.loc[peer_idxs, val_yr].dropna()
-    eps_t    = eps_data.loc[idx, val_yr]
-    price_t  = price_data.loc[idx, val_yr]
+    peer_pe_ratios = pe_ratio_with_gsubind.loc[peer_indices]
+    valid_peer_pe = peer_pe_ratios[2024].dropna()
 
-    if (eps_t > 0) and len(peer_pes):
-        med_pe   = peer_pes.median()
-        low_pe   = peer_pes.min()
-        high_pe  = peer_pes.max()
-        imp_avg  = eps_t * med_pe
-        imp_low  = eps_t * low_pe
-        imp_high = eps_t * high_pe
+    # EPS and Current Price
+    eps = eps_data.loc[idx, 2024]
+    current_price = price_data.loc[idx, 2024]
+
+    # ⚡ Remove invalid EPS
+    if eps <= 0 or np.isnan(eps):
+        eps = np.nan
+
+    if not valid_peer_pe.empty and not np.isnan(eps):
+        industry_pe_avg = valid_peer_pe.median()
+        implied_price_avg = eps * industry_pe_avg
+        implied_price_min = eps * valid_peer_pe.min()
+        implied_price_max = eps * valid_peer_pe.max()
     else:
-        med_pe = imp_avg = imp_low = imp_high = np.nan
+        industry_pe_avg = implied_price_avg = implied_price_min = implied_price_max = np.nan
 
-    # show metrics
+    # Display Key Inputs
     st.subheader("📊 Key Valuation Inputs")
-    c1, c2, c3 = st.columns(3)
-    c1.metric(f"EPS ({val_yr})", f"{eps_t:.2f}" if eps_t>0 else "N/A")
-    c2.metric("Industry Median P/E", f"{med_pe:.2f}" if not np.isnan(med_pe) else "N/A")
-    c3.metric(f"Current Price ({val_yr})", f"${price_t:.2f}")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("EPS (2024)", f"{eps:.2f}" if not np.isnan(eps) else "N/A")
+    col2.metric("Industry Median P/E", f"{industry_pe_avg:.2f}" if not np.isnan(industry_pe_avg) else "N/A")
+    col3.metric("Current Price (2024)", f"${current_price:.2f}" if not np.isnan(current_price) else "N/A")
 
-    # recommendation
+    # Recommendation Logic
     st.subheader("✅ Recommendation")
-    if not np.isnan(imp_avg):
-        if imp_avg > price_t:
-            st.success("Likely Undervalued — Consider Buying 📈")
-        else:
-            st.warning("Likely Overvalued — Exercise Caution ⚠️")
+    if not np.isnan(implied_price_avg) and implied_price_avg > current_price:
+        st.success("📈 Likely Undervalued — Consider Buying")
+    elif not np.isnan(implied_price_avg):
+        st.warning("📉 Likely Overvalued — Exercise Caution")
     else:
-        st.info("Not enough data to form a recommendation.")
+        st.info("ℹ️ Not enough data to provide recommendation.")
 
-    # valuation range viz
+    # Visualization
     st.subheader("📉 Valuation Range Visualization")
-    if not np.isnan(imp_avg):
-        fig, ax = plt.subplots(figsize=(10,2.5))
-        ax.hlines(1, imp_low, imp_high, color='gray', linewidth=10, alpha=0.3)
-        ax.vlines(imp_avg, 0.9, 1.1, color='blue', linewidth=3, label='Median Implied')
-        ax.plot(price_t, 1, 'ro', label='Current Price')
-        ax.text(imp_low, 1.15,  f"Low:  ${imp_low:.2f}",  ha='center')
-        ax.text(imp_avg,1.27,   f"Avg:  ${imp_avg:.2f}", ha='center', color='blue')
-        ax.text(imp_high,1.15, f"High: ${imp_high:.2f}", ha='center')
-        ax.set_xlim(imp_low*0.85, imp_high*1.15); ax.set_ylim(0.8,1.4)
-        ax.axis('off'); ax.legend(loc='upper center', ncol=2)
+
+    if not valid_peer_pe.empty and not np.isnan(eps):
+        fig, ax = plt.subplots(figsize=(10, 2.5))
+
+        # Gray bar for implied price range
+        ax.hlines(1, implied_price_min, implied_price_max, color='gray', linewidth=10, alpha=0.4)
+
+        # Blue line: median implied price
+        ax.vlines(implied_price_avg, 0.9, 1.1, color='blue', linewidth=2, label='Avg Implied Price')
+
+        # Red dot: current stock price
+        ax.plot(current_price, 1, 'ro', markersize=10, label='Current Price')
+
+        # Add separate text labels without overlap
+        ax.text(implied_price_min, 1.15, f"Low: ${implied_price_min:.2f}", ha='center', fontsize=9)
+        ax.text(implied_price_avg, 1.27, f"Avg: ${implied_price_avg:.2f}", ha='center', fontsize=9, color='blue')
+        ax.text(implied_price_max, 1.15, f"High: ${implied_price_max:.2f}", ha='center', fontsize=9)
+
+        ax.set_xlim(implied_price_min * 0.85, implied_price_max * 1.15)
+        ax.set_ylim(0.8, 1.4)
+        ax.axis('off')
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.35), ncol=2)
+
         st.pyplot(fig)
 
-        gap = ((imp_avg - price_t) / imp_avg) * 100
-        st.caption(f"Current is **{abs(gap):.1f}% {'below' if gap>0 else 'above'}** implied median.")
+        # Gap commentary
+        gap = ((implied_price_avg - current_price) / implied_price_avg) * 100
+        if gap > 0:
+            st.caption(f"📉 Current price is **{gap:.1f}% below** the implied valuation average.")
+        else:
+            st.caption(f"📈 Current price is **{abs(gap):.1f}% above** the implied valuation average.")
     else:
-        st.warning("⚠️ Not enough peer data for visualization.")
+        st.warning("⚠️ Not enough valid peer data to create a proper visualization.")
 
-# ── Tab 2: Backtest Analysis ───────────────────────────────────────────────────
-with tab_bt:
-    # assemble history
-    eps_row    = eps_data.loc[idx].mask(eps_data.loc[idx] <= 0)
-    med_pe_row = pd.Series(medpe_map.get(gsubind, [None]*len(years)), index=years)
-    model_price= eps_row * med_pe_row
-    actual_row = actual_price_data.loc[ticker]
-
-    price_df = pd.DataFrame({
-        "Year":        years,
-        "Model Price": model_price.values,
-        "Actual Price": actual_row.values,
-    }).dropna(subset=["Actual Price"])
-
-    # shift model series forward by 1
-    yrs_act = price_df["Year"]
-    yrs_mod = yrs_act + 1
-    prs_act = price_df["Actual Price"]
-    prs_mod = price_df["Model Price"]
-
-    st.subheader(f"📈 Backtest: {ticker} Model vs Actual (1-Year Ahead)")
-    fig, ax = plt.subplots(figsize=(10,5))
-    ax.plot(yrs_mod, prs_mod, marker='s', label='Model (t→t+1)')
-    ax.plot(yrs_act, prs_act, marker='o', label='Actual (t)')
-    ax.set_xlabel("Year"); ax.set_ylabel("Price")
-    ax.set_xticks(list(range(years[0], years[-1]+2, 2)))
-    plt.xticks(rotation=45)
-    ax.grid(True, linestyle='--', alpha=0.5)
-    ax.legend()
-    st.pyplot(fig)
-
-    # compute hit rate (1-year only)
-    total = correct = 0
-    for y in years[:-1]:
-        if pd.isna(model_price[y]): continue
-        pred = "Up" if model_price[y] > actual_row[y] else "Down"
-        if (y+1 in actual_row.index) and pd.notna(actual_row[y+1]):
-            actual_mv = "Up" if actual_row[y+1] > actual_row[y] else "Down"
-            total += 1
-            correct += (pred == actual_mv)
-
-    hr = (correct/total*100) if total else np.nan
-    st.subheader("🎯 Hit Rate Analysis")
-    st.write(f"Total Signals: {total}   Correct: {correct}")
-    if not np.isnan(hr):
-        st.success(f"Overall Hit Rate: {hr:.1f}%")
-    else:
-        st.warning("Not enough data to calculate hit rate.")
-
-    st.dataframe(price_df, use_container_width=True)
+else:
+    if ticker_input:
+        st.error("❌ Ticker not found. Please check and try again.")
