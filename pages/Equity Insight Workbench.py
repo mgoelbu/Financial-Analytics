@@ -95,7 +95,20 @@ with tab1:
     if ticker_input in ticker_data.values:
         idx = ticker_data[ticker_data == ticker_input].index[0]
         company_gsubind = gsubind_data[idx]
-        st.subheader(f"Details for: {ticker_input}")
+        # ── Show ticker logo + title ─────────────────────────────────────────
+        ticker_obj = yf.Ticker(ticker_input.upper())
+        info       = ticker_obj.info
+        website    = info.get("website", "")
+        domain     = urllib.parse.urlparse(website).netloc
+        logo_url   = info.get("logo_url") or (f"https://logo.clearbit.com/{domain}" if domain else None)
+        
+        col1, col2 = st.columns([1, 6])
+        with col1:
+            if logo_url:
+                st.image(logo_url, width=50)
+        with col2:
+            st.subheader(f"Details for: {ticker_input}")
+
         # Peers in same gsubind
         peer_indices = gsubind_data[gsubind_data == company_gsubind].index
         peers = ticker_data.loc[peer_indices].tolist()
