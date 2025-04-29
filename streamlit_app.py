@@ -27,19 +27,34 @@ st.markdown(
     "---"
 )
 # ─── Data Universe Summary ─────────────────────────────────────────────────────
+
 st.markdown("---")
 st.subheader("📊 Data Universe & Sample Size")
-st.markdown(
-    "## 🚀 Get Started"
-    """
-    - **Total Universe:** `4455` tickers (all publicly listed companies we track)
-    - **Historical Data Points:** `{TOTAL_YEARS}` years of annual EPS and price data per ticker
-    - **Backtest Samples:** `{TOTAL_PREDICTIONS}` one- and two-year directional predictions evaluated
 
-    _Fill in the placeholders above with your actual numbers._
-    """,
-    unsafe_allow_html=True
+c1, c2, c3, c4 = st.columns(4)
+
+c1.metric("Tickers Tracked",  "4 455")
+c2.metric("Years of History", "15")
+c3.metric("Raw Data Points",  "133 650")
+c4.metric("Back-test Samples", "6 150")
+
+st.caption(
+    "Raw data points = EPS and price pairs (15 years × 4 455 tickers). "
+    "Back-test samples equal 205 tickers × 30 predictions."
 )
+
+# bump the value font a bit larger
+st.markdown(
+    """
+    <style>
+        div[data-testid="metric-container"] > div > span {
+            font-size: 2.5rem;            /* value text */
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 # ─── Link to Main App ──────────────────────────────────────────────────────────
 st.markdown("---")
