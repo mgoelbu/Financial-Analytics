@@ -31,15 +31,16 @@ st.markdown(
 st.markdown("---")
 st.subheader("📊 Data Universe & Sample Size")
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4, c5 = st.columns(4)
 
-c1.metric("Tickers Tracked",  "4 455")
+c1.metric("Tickers Tracked",  "4,455")
 c2.metric("Years of History", "15")
-c3.metric("Raw Data Points",  "133 650")
-c4.metric("Back-test Samples", "6 150")
+c3.metric("Raw Data Points",  "133,650")
+c4.metric("Back-test Samples", "6,150")
+c5.metric("Training Period", "15 years (2010-2024)")
 
 st.caption(
-    "Raw data points = EPS and price pairs (15 years × 4 455 tickers). "
+    "Raw data points = EPS and price pairs (15 years × 4,455 tickers). "
     "Back-test samples equal 205 tickers × 30 predictions."
 )
 
@@ -61,5 +62,4 @@ st.markdown("---")
 st.markdown("## 🚀 Get Started")
 st.markdown(
     "[👉 Go to Equity Insight Workbench]"
-    "[👉 Go to Equity Insight Workbench](Equity Insight Workbench.py)"
 )
