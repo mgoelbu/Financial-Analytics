@@ -329,6 +329,20 @@ with tab2:
             st.success(f"🌟 Global Model Accuracy: **{global_hit_rate:.2f}%**")
         else:
             st.warning("Not enough data to calculate global model accuracy.")
+        st.markdown(
+        f"""
+        **Why this matters:**  
+        The **Global Model Accuracy** of **{global_hit_rate:.2f}%** measures how often our simple EPS × PE
+        price‐direction model would have correctly predicted the next-year (and two-year) moves
+        if you applied it to **every single stock** in our prototype universe over the backtest period.
+        
+        In other words, imagine you blindly used this model on all ~150 tickers each year;
+        you’d get the direction right {global_hit_rate:.2f}% of the time overall.  
+        - A value **above ~50%** means the model slightly outperforms random chance across the board.  
+        - A value **near 50%** suggests it’s effectively a coin-flip industry-agnostic signal.  
+        - A value **below 50%** would indicate it actually under‐performs random guessing.  
+        """
+    )
     else:
         st.error("❌ Ticker not found. Please check your selection.")
 
