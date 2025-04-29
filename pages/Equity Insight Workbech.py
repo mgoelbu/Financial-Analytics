@@ -62,6 +62,26 @@ years = list(range(2010, 2025))
 # ─── Sidebar Ticker Input ────────────────────────────────────────────────────
 ticker_input = st.sidebar.selectbox("Choose a ticker", options=ticker_data.tolist())
 
+# ─── How-to banner ──────────────────────────────────────────────────────────
+with st.container():
+    st.markdown(
+        """
+        ### 🚀 Welcome to the **Equity Insight Workbench**
+
+        | What do you want to know? | Click this tab |
+        |---------------------------|----------------|
+        | **Is the stock cheap or rich *right now*?** | **💸 Valuation Advisor** |
+        | **Has this simple model worked in the past?** | **📊 Backtest** |
+        | **What’s happening with the company & price today?** | **🏢 Company Snapshot** |
+
+        1. **Pick a ticker** in the sidebar.  
+        2. Jump between tabs to answer the questions above.  
+        3. Use the coloured call-outs and hit-rate scores to guide your next step.
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 # ─── Tabs ─────────────────────────────────────────────────────────────────────
 tab1, tab2, tab3 = st.tabs([
     "💸 Valuation Advisor", 
