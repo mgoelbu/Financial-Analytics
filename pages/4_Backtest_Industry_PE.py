@@ -72,7 +72,9 @@ if ticker_input:
 
         st.subheader(f"Details for: {ticker_input}")
         gsubind = gsubind_data[idx]
-        st.write("**gsubind:**", f"🧭 {gsubind}")
+        industry  = company_data.loc[idx, "Industry"]
+        st.write("**gsubind:**", f" {gsubind}")
+        st.write("**Industry:**", industry)
 
         eps_row = eps_data.loc[idx].mask(eps_data.loc[idx] <= 0)  # replace <=0 with NaN
         median_pe_row = pd.Series(
