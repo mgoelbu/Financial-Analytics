@@ -1,7 +1,8 @@
 # Financial-Analytics
-AC820 Spring 2025 Semester BU MBA 2025
+AC820/BA870 Spring 2025 Semester
 
-Team Member - 
-1. Mayank Goel
-2. Nilay
-3. Varun Shah
+Team Members - 
+
+  1. Mayank Goel <mgoel@bu.edu>
+  2. Nilay Jaini <nilayj@bu.edu>
+  3. Varun Shah  <varuns10@bu.edu>
