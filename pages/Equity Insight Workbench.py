@@ -242,7 +242,6 @@ with tab2:
         price_df["Prediction"] = np.where(model_price > actual_price, "Up", "Down")
 
         # ── Interactive 1-Year-Ahead Price Comparison ─────────────────────────────
-        # ── Interactive 1-Year-Ahead Price Comparison ──────────────────────────────
         st.subheader(f"📈 {ticker_input}: Model vs Actual Price (t → t + 1)")
         
         # x-axis for each series
@@ -261,9 +260,10 @@ with tab2:
                 x=x_model,
                 y=y_model,
                 mode="lines+markers",
-                name="Model (predicted t → t+1)",
+                name="Model",
                 marker=dict(symbol="square"),
-                line=dict(width=2),
+                line=dict(width=2)
+                hovertemplate="Model: $%{y:.2f}<extra></extra>",
             )
         )
         
@@ -273,9 +273,10 @@ with tab2:
                 x=x_actual,
                 y=y_actual,
                 mode="lines+markers",
-                name="Actual Price (t)",
+                name="Actual",
                 marker=dict(symbol="circle"),
-                line=dict(width=2, dash="dash"),
+                line=dict(width=2, dash="dash")
+                hovertemplate="Actual: $%{y:.2f}<extra></extra>",
             )
         )
         
