@@ -106,7 +106,7 @@ with tab1:
 
         
         st.markdown(f"**Industry:** {industry}  ")
-        st.markdown(f"**Peers:** {', '.join(peers)}")
+        st.markdown(f"**Competitors:** {', '.join(peers)}")
 
         # Median P/E for peers in 2024
         pe_ratio = price_data.divide(eps_data)
