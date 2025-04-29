@@ -75,6 +75,12 @@ if ticker_input:
         industry  = company_data.loc[idx, "Industry"]
         st.write("**gsubind:**", f" {gsubind}")
         st.write("**Industry:**", industry)
+        # competitors = all other tickers with the same gsubind
+        all_peers = ticker_data[gsubind_data == gsubind].tolist()
+        # optionally drop the current ticker
+        competitors = [t for t in all_peers if t != ticker_input]
+
+st.write("**Competitors:**", ", ".join(competitors) if competitors else "None")
 
         eps_row = eps_data.loc[idx].mask(eps_data.loc[idx] <= 0)  # replace <=0 with NaN
         median_pe_row = pd.Series(
