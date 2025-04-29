@@ -71,7 +71,7 @@ with st.container():
         | What do you want to know? | Click this tab |
         |---------------------------|----------------|
         | **Is the stock cheap or rich *right now*?** | **💸 Valuation Advisor** |
-        | **Has this simple model worked in the past?** | **📊 Backtest** |
+        | **Has this model worked in the past?** | **📊 Backtest** |
         | **What’s happening with the company & price today?** | **🏢 Company Snapshot** |
 
         1. **Pick a ticker** in the sidebar.  
@@ -95,7 +95,7 @@ with tab1:
     if ticker_input in ticker_data.values:
         idx = ticker_data[ticker_data == ticker_input].index[0]
         company_gsubind = gsubind_data[idx]
-
+        st.subheader(f"Details for: {ticker_input}")
         # Peers in same gsubind
         peer_indices = gsubind_data[gsubind_data == company_gsubind].index
         peers = ticker_data.loc[peer_indices].tolist()
