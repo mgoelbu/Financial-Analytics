@@ -24,18 +24,39 @@ def load_data():
     median_pe = pd.read_excel(file_path, sheet_name='Median PE', header=None)
     median_pe_data_trimmed = median_pe.iloc[5:, :18].reset_index(drop=True)
     median_pe_data_trimmed.columns = [None, None, 'gsubind'] + list(range(2010, 2025))
-    gsubind_to_median_pe = {row['gsubind']: row[3:].values for _, row in median_pe_data_trimmed.iterrows()}
+    gsubind_to_median_pe = {
+        row['gsubind']: row[3:].values
+        for _, row in median_pe_data_trimmed.iterrows()
+    }
 
     analysis_data = pd.read_excel(file_path, sheet_name='Analysis', header=None)
     analysis_data_trimmed = analysis_data.iloc[5:, :40].reset_index(drop=True)
-    actual_price_data = analysis_data_trimmed.iloc[:, 24:39].apply(pd.to_numeric, errors='coerce')
+    actual_price_data = analysis_data_trimmed.iloc[:, 24:39].apply(
+        pd.to_numeric, errors='coerce'
+    )
     actual_price_data.columns = list(range(2010, 2025))
     actual_price_data.index = analysis_data_trimmed.iloc[:, 0]
 
-    return company_data, eps_data, price_data, ticker_data, gsubind_data, gsubind_to_median_pe, actual_price_data
+    return (
+        company_data,
+        eps_data,
+        price_data,
+        ticker_data,
+        gsubind_data,
+        gsubind_to_median_pe,
+        actual_price_data,
+    )
 
 # 🚀 Load
-company_data, eps_data, price_data, ticker_data, gsubind_data, gsubind_to_median_pe, actual_price_data = load_data()
+(
+    company_data,
+    eps_data,
+    price_data,
+    ticker_data,
+    gsubind_data,
+    gsubind_to_median_pe,
+    actual_price_data,
+) = load_data()
 years = list(range(2010, 2025))
 
 # 📊 Streamlit App
@@ -50,48 +71,87 @@ if ticker_input:
         gsubind = gsubind_data[idx]
         st.write("**gsubind:**", f"🧭 {gsubind}")
 
-        eps_row = eps_data.loc[idx]
-        eps_row = eps_row.mask(eps_row <= 0)  # Replace 0 and negatives with NaN
-
-        median_pe_row = pd.Series(gsubind_to_median_pe.get(gsubind, [None]*len(years)), index=years)
+        eps_row = eps_data.loc[idx].mask(eps_data.loc[idx] <= 0)  # replace <=0 with NaN
+        median_pe_row = pd.Series(
+            gsubind_to_median_pe.get(gsubind, [None] * len(years)),
+            index=years,
+        )
         model_price = eps_row * median_pe_row
 
         try:
             actual_price = actual_price_data.loc[ticker_input]
         except KeyError:
-            st.error(f"Ticker '{ticker_input}' not found in 'Analysis' actual price data.")
+            st.error(f"Ticker '{ticker_input}' not found in actual‐price data.")
             st.stop()
 
         price_df = pd.DataFrame({
-            'Year': years,
-            'EPS': eps_row.values,
-            'Median PE': median_pe_row.values,
-            'Model Price': model_price.values,
-            'Actual Price': actual_price.values
+            "Year": years,
+            "EPS": eps_row.values,
+            "Median PE": median_pe_row.values,
+            "Model Price": model_price.values,
+            "Actual Price": actual_price.values,
         })
-        price_df['Prediction'] = np.where(model_price > actual_price, 'Up', 'Down')
-        
+        price_df["Prediction"] = np.where(
+            model_price > actual_price, "Up", "Down"
+        )
+
+        # ▶️ Detailed line chart with annotations
+        st.subheader(f"📈 {ticker_input} – Model vs. Actual Price")
+        fig, ax = plt.subplots()
+        ax.plot(price_df["Year"], price_df["Model Price"],
+                marker="o", label="Model")
+        ax.plot(price_df["Year"], price_df["Actual Price"],
+                marker="o", label="Actual")
+        for x, y in zip(price_df["Year"], price_df["Model Price"]):
+            ax.annotate(f"{y:.2f}", (x, y),
+                        textcoords="offset points",
+                        xytext=(0, 6), ha="center")
+        for x, y in zip(price_df["Year"], price_df["Actual Price"]):
+            ax.annotate(f"{y:.2f}", (x, y),
+                        textcoords="offset points",
+                        xytext=(0, -10), ha="center")
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Price")
+        ax.set_xticks(price_df["Year"])
+        ax.legend()
+        st.pyplot(fig)
+
         # 🎯 Hit Rate Calculation
         total_predictions = 0
         correct_predictions = 0
 
         for year in range(2010, 2024):
-            if year not in price_df['Year'].values:
+            if year not in price_df["Year"].values:
+                continue
+            if pd.isna(model_price.get(year)):
                 continue
 
-            if pd.isna(model_price.get(year)):
-                continue  # Skip if model price for that year is NaN
+            model_pred = (
+                "Up"
+                if model_price[year] > actual_price[year]
+                else "Down"
+            )
 
-            model_pred = 'Up' if model_price[year] > actual_price[year] else 'Down'
-
-            if (year+1 in actual_price.index) and pd.notna(actual_price.get(year+1)):
-                actual_move_next = 'Up' if actual_price[year+1] > actual_price[year] else 'Down'
+            if (year + 1 in actual_price.index) and pd.notna(
+                actual_price.get(year + 1)
+            ):
+                actual_move_next = (
+                    "Up"
+                    if actual_price[year + 1] > actual_price[year]
+                    else "Down"
+                )
                 if model_pred == actual_move_next:
                     correct_predictions += 1
                 total_predictions += 1
 
-            if (year+2 in actual_price.index) and pd.notna(actual_price.get(year+2)):
-                actual_move_second = 'Up' if actual_price[year+2] > actual_price[year] else 'Down'
+            if (year + 2 in actual_price.index) and pd.notna(
+                actual_price.get(year + 2)
+            ):
+                actual_move_second = (
+                    "Up"
+                    if actual_price[year + 2] > actual_price[year]
+                    else "Down"
+                )
                 if model_pred == actual_move_second:
                     correct_predictions += 1
                 total_predictions += 1
@@ -105,22 +165,27 @@ if ticker_input:
         st.markdown(f"**Total Valid Predictions:** {total_predictions}")
         st.markdown(f"**Correct Predictions:** {correct_predictions}")
         if not np.isnan(overall_hit_rate):
-            st.success(f"✅ Overall Average Hit Rate: **{overall_hit_rate:.2f}%**")
+            st.success(
+                f"✅ Overall Average Hit Rate: **{overall_hit_rate:.2f}%**"
+            )
         else:
             st.warning("Not enough data to calculate hit rate.")
 
         st.dataframe(price_df, use_container_width=True)
 
         # 🔮 Final Prediction for 2024
-        price_df.set_index('Year', inplace=True)
-        if 2024 in price_df.index and not pd.isna(price_df.loc[2024, 'Prediction']):
-            st.success(f"🔮 Final Prediction for 2024: {price_df.loc[2024, 'Prediction']}")
+        price_df.set_index("Year", inplace=True)
+        if 2024 in price_df.index and not pd.isna(
+            price_df.loc[2024, "Prediction"]
+        ):
+            st.success(
+                f"🔮 Final Prediction for 2024: {price_df.loc[2024, 'Prediction']}"
+            )
         else:
             st.warning("Prediction for 2024 not available.")
 
         # 🏆 Gsubind Average Accuracy
         peer_indices = gsubind_data[gsubind_data == gsubind].index
-
         gsubind_total = 0
         gsubind_correct = 0
 
@@ -128,33 +193,49 @@ if ticker_input:
             peer_ticker = ticker_data[peer_idx]
             if peer_ticker not in actual_price_data.index:
                 continue
-
             try:
-                peer_eps_row = eps_data.loc[peer_idx]
-                peer_eps_row = peer_eps_row.mask(peer_eps_row <= 0)
-                peer_actual_price = actual_price_data.loc[peer_ticker]
-                peer_median_pe_row = pd.Series(gsubind_to_median_pe.get(gsubind, [None]*len(years)), index=years)
-                peer_model_price = peer_eps_row * peer_median_pe_row
+                peer_eps = eps_data.loc[peer_idx].mask(eps_data.loc[peer_idx] <= 0)
+                peer_actual = actual_price_data.loc[peer_ticker]
+                peer_median = pd.Series(
+                    gsubind_to_median_pe.get(gsubind, [None] * len(years)),
+                    index=years,
+                )
+                peer_model = peer_eps * peer_median
 
                 for year in range(2010, 2024):
-                    if pd.isna(peer_model_price.get(year)):
+                    if pd.isna(peer_model.get(year)):
                         continue
+                    peer_pred = (
+                        "Up"
+                        if peer_model[year] > peer_actual[year]
+                        else "Down"
+                    )
 
-                    peer_model_pred = 'Up' if peer_model_price[year] > peer_actual_price[year] else 'Down'
-
-                    if (year+1 in peer_actual_price.index) and pd.notna(peer_actual_price.get(year+1)):
-                        peer_actual_next = 'Up' if peer_actual_price[year+1] > peer_actual_price[year] else 'Down'
-                        if peer_model_pred == peer_actual_next:
+                    if (year + 1 in peer_actual.index) and pd.notna(
+                        peer_actual.get(year + 1)
+                    ):
+                        nxt = (
+                            "Up"
+                            if peer_actual[year + 1] > peer_actual[year]
+                            else "Down"
+                        )
+                        if peer_pred == nxt:
                             gsubind_correct += 1
                         gsubind_total += 1
 
-                    if (year+2 in peer_actual_price.index) and pd.notna(peer_actual_price.get(year+2)):
-                        peer_actual_second = 'Up' if peer_actual_price[year+2] > peer_actual_price[year] else 'Down'
-                        if peer_model_pred == peer_actual_second:
+                    if (year + 2 in peer_actual.index) and pd.notna(
+                        peer_actual.get(year + 2)
+                    ):
+                        nxt2 = (
+                            "Up"
+                            if peer_actual[year + 2] > peer_actual[year]
+                            else "Down"
+                        )
+                        if peer_pred == nxt2:
                             gsubind_correct += 1
                         gsubind_total += 1
 
-            except:
+            except Exception:
                 continue
 
         if gsubind_total > 0:
@@ -169,43 +250,58 @@ if ticker_input:
         else:
             st.warning("Not enough data for gsubind hit rate.")
 
-        # 🌍 Overall Model Accuracy
+        # 🌍 Overall Model Accuracy (All Stocks)
         global_total = 0
         global_correct = 0
 
         for peer_idx in range(len(ticker_data)):
             peer_ticker = ticker_data[peer_idx]
             peer_gsubind = gsubind_data[peer_idx]
-
             if peer_ticker not in actual_price_data.index:
                 continue
-
             try:
-                peer_eps_row = eps_data.loc[peer_idx]
-                peer_eps_row = peer_eps_row.mask(peer_eps_row <= 0)
-                peer_actual_price = actual_price_data.loc[peer_ticker]
-                peer_median_pe_row = pd.Series(gsubind_to_median_pe.get(peer_gsubind, [None]*len(years)), index=years)
-                peer_model_price = peer_eps_row * peer_median_pe_row
+                peer_eps = eps_data.loc[peer_idx].mask(eps_data.loc[peer_idx] <= 0)
+                peer_actual = actual_price_data.loc[peer_ticker]
+                peer_median = pd.Series(
+                    gsubind_to_median_pe.get(peer_gsubind, [None] * len(years)),
+                    index=years,
+                )
+                peer_model = peer_eps * peer_median
 
                 for year in range(2010, 2024):
-                    if pd.isna(peer_model_price.get(year)):
+                    if pd.isna(peer_model.get(year)):
                         continue
+                    peer_pred = (
+                        "Up"
+                        if peer_model[year] > peer_actual[year]
+                        else "Down"
+                    )
 
-                    peer_model_pred = 'Up' if peer_model_price[year] > peer_actual_price[year] else 'Down'
-
-                    if (year+1 in peer_actual_price.index) and pd.notna(peer_actual_price.get(year+1)):
-                        actual_next = 'Up' if peer_actual_price[year+1] > peer_actual_price[year] else 'Down'
-                        if peer_model_pred == actual_next:
+                    if (year + 1 in peer_actual.index) and pd.notna(
+                        peer_actual.get(year + 1)
+                    ):
+                        nxt = (
+                            "Up"
+                            if peer_actual[year + 1] > peer_actual[year]
+                            else "Down"
+                        )
+                        if peer_pred == nxt:
                             global_correct += 1
                         global_total += 1
 
-                    if (year+2 in peer_actual_price.index) and pd.notna(peer_actual_price.get(year+2)):
-                        actual_second = 'Up' if peer_actual_price[year+2] > peer_actual_price[year] else 'Down'
-                        if peer_model_pred == actual_second:
+                    if (year + 2 in peer_actual.index) and pd.notna(
+                        peer_actual.get(year + 2)
+                    ):
+                        nxt2 = (
+                            "Up"
+                            if peer_actual[year + 2] > peer_actual[year]
+                            else "Down"
+                        )
+                        if peer_pred == nxt2:
                             global_correct += 1
                         global_total += 1
 
-            except:
+            except Exception:
                 continue
 
         if global_total > 0:
@@ -221,47 +317,3 @@ if ticker_input:
 
     else:
         st.warning("Ticker not found. Please check again.")
-
-
-
-# ▶️ Detailed line chart with annotations
-st.subheader(f"📈 {ticker_input} – Model vs. Actual Price")
-
-fig, ax = plt.subplots()
-
-# Plot lines with markers
-ax.plot(
-    price_df["Year"],
-    price_df["Model Price"],
-    marker="o",
-    label="Model"
-)
-ax.plot(
-    price_df["Year"],
-    price_df["Actual Price"],
-    marker="o",
-    label="Actual"
-)
-
-# Annotate each point
-for x, y in zip(price_df["Year"], price_df["Model Price"]):
-    ax.annotate(f"{y:.2f}", (x, y),
-                textcoords="offset points",
-                xytext=(0, 6),
-                ha="center")
-
-for x, y in zip(price_df["Year"], price_df["Actual Price"]):
-    ax.annotate(f"{y:.2f}", (x, y),
-                textcoords="offset points",
-                xytext=(0, -10),
-                ha="center")
-
-# Axis labels and legend
-ax.set_xlabel("Year")
-ax.set_ylabel("Price")
-ax.set_xticks(price_df["Year"])
-ax.legend()
-
-# Render in Streamlit
-st.pyplot(fig)
-
