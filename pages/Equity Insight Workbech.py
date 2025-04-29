@@ -281,23 +281,23 @@ with tab2:
                     gsubind_total += 1
 
         gsubind_hit_rate = (gsubind_correct/gsubind_total*100) if gsubind_total else np.nan
-        st.subheader(f"🏆 {industry} Sub-Industry Hit Rate Comparison")
+        st.subheader(f"🏆 {industry} Industry Hit Rate Comparison")
         st.markdown(
             f"""
             **What this means:**  
             This number (📊 **{gsubind_hit_rate:.2f}%**) is the **average**  
             one-year (and two-year) directional hit rate of our simple EPS×PE
-            model across *all* members of the **{industry}** sub-industry.  
+            model across *all* members of the **{industry}** industry.  
             In other words, if you had applied this model to every peer in the
             {industry} group over the past decade, you would have been correct
             {gsubind_hit_rate:.2f}% of the time.  
             A higher value here means the model tends to work well for this
-            sub-industry; a lower value suggests it’s more of a coin-flip.
+            industry; a lower value suggests it’s more of a coin-flip.
             """
         )
         st.markdown(f"**Your Stock Hit Rate:** {overall_hit_rate:.2f}%")
         if not np.isnan(gsubind_hit_rate):
-            st.success(f"🏆 Gsubind Average Hit Rate: **{gsubind_hit_rate:.2f}%**")
+            st.success(f"🏆 Industry Average Hit Rate: **{gsubind_hit_rate:.2f}%**")
         else:
             st.warning("Not enough data for gsubind hit rate.")
 
