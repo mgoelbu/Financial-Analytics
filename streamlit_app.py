@@ -63,11 +63,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ─────────────────── Launch button & sidebar link ──────────
-st.markdown("---")
-if st.button("🚀 Launch Equity Insight Workbench", use_container_width=True):
-    st.switch_page("pages/Workbench.py")
 
-# custom sidebar link (so users can also navigate manually)
-with st.sidebar:
-    st.page_link("pages/Workbench.py", label="📊 Equity Insight Workbench", icon="🧮")
+# ─── Link to Main App ──────────────────────────────────────────────────────────
+st.markdown("---")
+st.markdown("## 🚀 Get Started")
+st.markdown(
+"[👉 Go to Equity Insight Workbench](Equity Insight Workbench.py)"
+)
