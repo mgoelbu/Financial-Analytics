@@ -593,18 +593,16 @@ with tab3:
     st.title("🏢 Company Snapshot")
     if ticker_input in ticker_data.values:
         ticker = yf.Ticker(ticker_input.upper())
-        info = get_ticker_info(ticker_input.upper())
-            if not info:
+        info   = get_ticker_info(ticker_input.upper())
+        if not info:
             st.warning("⚠️ Couldn't fetch company data (rate limit). Try again in a minute.")
             st.stop()
-            try:
-                company_name = info.get("longName", ticker_input.upper())
+
         try:
-            
             company_name = info.get("longName", ticker_input.upper())
-            website = info.get("website", "")
-            domain = urllib.parse.urlparse(website).netloc
-            logo_url = info.get("logo_url") or (
+            website      = info.get("website", "")
+            domain       = urllib.parse.urlparse(website).netloc
+            logo_url     = info.get("logo_url") or (
                 f"https://logo.clearbit.com/{domain}" if domain else None
             )
 
