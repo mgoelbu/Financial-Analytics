@@ -11,12 +11,22 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 import plotly.graph_objects as go
 import urllib.parse
+import time
+from yfinance import YFRateLimitError
 
 
 @st.cache_data(show_spinner=False)
 def get_ticker_info(tkr: str) -> dict:
-    """Fetch and cache Yahoo Finance info for a given ticker."""
-    return yf.Ticker(tkr).info
+    """Fetch and cache Yahoo Finance info with retry on rate-limit."""
+    ticker = yf.Ticker(tkr)
+    for attempt in range(3):
+        try:
+            return ticker.info or {}
+        except YFRateLimitError:
+            # wait a bit and retry
+            time.sleep(1 + attempt)
+    # if we’ve retried 3 times, give up
+    return {}
 
 
 # ─── Page config ─────────────────────────────────────────────────────────────
@@ -120,6 +130,9 @@ with tab1:
 
         # ── Logo & header ────────────────────────────────────────────────
         info = get_ticker_info(ticker_input.upper())
+        if not info:
+            st.warning("⚠️ Couldn't fetch valuation data (rate limit). Please try again in a minute.")
+            st.stop()
         website = info.get("website", "")
         domain = urllib.parse.urlparse(website).netloc
         logo_url = info.get("logo_url") or (
@@ -281,6 +294,9 @@ with tab2:
 
         # ── Logo & header ────────────────────────────────────────────
         info = get_ticker_info(ticker_input.upper())
+        if not info:
+            st.warning("⚠️ Couldn't fetch backtest data (rate limit). Please try again in a minute.")
+            st.stop()
         website = info.get("website", "")
         domain = urllib.parse.urlparse(website).netloc
         logo_url = info.get("logo_url") or (
@@ -575,10 +591,14 @@ price-direction model would have correctly predicted next-year (and two-year) mo
 # ═════════════════════════════════════════════════════════════════════════════
 with tab3:
     st.title("🏢 Company Snapshot")
-
     if ticker_input in ticker_data.values:
         ticker = yf.Ticker(ticker_input.upper())
         info = get_ticker_info(ticker_input.upper())
+            if not info:
+            st.warning("⚠️ Couldn't fetch company data (rate limit). Try again in a minute.")
+            st.stop()
+            try:
+                company_name = info.get("longName", ticker_input.upper())
         try:
             
             company_name = info.get("longName", ticker_input.upper())
