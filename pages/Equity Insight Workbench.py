@@ -3,6 +3,7 @@ streamlit_app.py  –  Equity Insight Workbench
 Cleaned up with consistent 4-space indentation.
 """
 
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -10,6 +11,13 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 import plotly.graph_objects as go
 import urllib.parse
+
+
+@st.cache_data(show_spinner=False)
+def get_ticker_info(tkr: str) -> dict:
+    """Fetch and cache Yahoo Finance info for a given ticker."""
+    return yf.Ticker(tkr).info
+
 
 # ─── Page config ─────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Valuation & Backtest & Snapshot", layout="wide")
@@ -111,8 +119,7 @@ with tab1:
         company_gsubind = gsubind_data[idx]
 
         # ── Logo & header ────────────────────────────────────────────────
-        ticker_obj = yf.Ticker(ticker_input.upper())
-        info = ticker_obj.info
+        info = get_ticker_info(ticker_input.upper())
         website = info.get("website", "")
         domain = urllib.parse.urlparse(website).netloc
         logo_url = info.get("logo_url") or (
@@ -273,8 +280,7 @@ with tab2:
         industry = company_data.loc[idx, "Industry"]
 
         # ── Logo & header ────────────────────────────────────────────
-        ticker_obj = yf.Ticker(ticker_input.upper())
-        info = ticker_obj.info
+        info = get_ticker_info(ticker_input.upper())
         website = info.get("website", "")
         domain = urllib.parse.urlparse(website).netloc
         logo_url = info.get("logo_url") or (
@@ -572,8 +578,9 @@ with tab3:
 
     if ticker_input in ticker_data.values:
         ticker = yf.Ticker(ticker_input.upper())
+        info = get_ticker_info(ticker_input.upper()
         try:
-            info = ticker.info
+            
             company_name = info.get("longName", ticker_input.upper())
             website = info.get("website", "")
             domain = urllib.parse.urlparse(website).netloc
