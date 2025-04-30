@@ -2,30 +2,15 @@
 streamlit_app.py  –  Equity Insight Workbench
 Cleaned up with consistent 4-space indentation.
 """
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import yfinance as yf
-from yfinance.exceptions import YFRateLimitError
 import plotly.graph_objects as go
 import urllib.parse
-import time
-
-
-
-@st.cache_data(show_spinner=False)
-def get_ticker_info(tkr: str) -> dict:
-    """Fetch and cache Yahoo Finance info with retry on rate-limit."""
-    ticker = yf.Ticker(tkr)
-    for attempt in range(3):
-        try:
-            return ticker.info or {}
-        except YFRateLimitError:
-            # wait a bit and retry
-            time.sleep(1 + attempt)
-    # if we’ve retried 3 times, give up
-    return {}
+from yfinance.exceptions import YFRateLimitError
 
 
 # ─── Page config ─────────────────────────────────────────────────────────────
@@ -126,17 +111,34 @@ with tab1:
     if ticker_input in ticker_data.values:
         idx = ticker_data[ticker_data == ticker_input].index[0]
         company_gsubind = gsubind_data[idx]
+        try:
+            ticker_obj = yf.Ticker(ticker_input.upper())
+            info = ticker_obj.info
+            website = info.get("website", "")
+            domain = urllib.parse.urlparse(website).netloc
+            logo_url = info.get("logo_url") or (
+                f"https://logo.clearbit.com/{domain}" if domain else None
+            )
+            current_price = info.get("regularMarketPrice", "Not fetched")
+        except YFRateLimitError:
+            st.error("⚠️ Unable to fetch data from Yahoo Finance due to rate limits. Please try again later.")
+            info = {}  # Fallback to an empty dictionary
+            logo_url = None
+            current_price = "Not fetched"
+        except Exception as e:
+            st.error(f"⚠️ An unexpected error occurred: {str(e)}")
+            info = {}
+            logo_url = None
+            current_price = "Not fetched"
 
         # ── Logo & header ────────────────────────────────────────────────
-        info = get_ticker_info(ticker_input.upper())
-        if not info:
-            st.warning("⚠️ Couldn't fetch valuation data (rate limit). Please try again in a minute.")
-            st.stop()
-        website = info.get("website", "")
-        domain = urllib.parse.urlparse(website).netloc
-        logo_url = info.get("logo_url") or (
-            f"https://logo.clearbit.com/{domain}" if domain else None
-        )
+        # ticker_obj = yf.Ticker(ticker_input.upper())
+        # info = ticker_obj.info
+        # website = info.get("website", "")
+        # domain = urllib.parse.urlparse(website).netloc
+        # logo_url = info.get("logo_url") or (
+        #     f"https://logo.clearbit.com/{domain}" if domain else None
+        # )
 
         col1, col2 = st.columns([1, 6])
         with col1:
@@ -177,7 +179,9 @@ with tab1:
         eps_valid = (eps_2024 > 0) and not np.isnan(eps_2024)
 
         if eps_valid and not valid_peer_pe.empty:
-            industry_pe_avg = valid_peer_pe.median()
+            # industry_pe_avg = valid_peer_pe.median()
+            pe_2024_array = gsubind_to_median_pe.get(company_gsubind, [np.nan] * len(years))
+            industry_pe_avg = pe_2024_array[-1]
             implied_price_avg = eps_2024 * industry_pe_avg
             implied_price_min = eps_2024 * valid_peer_pe.min()
             implied_price_max = eps_2024 * valid_peer_pe.max()
@@ -189,7 +193,7 @@ with tab1:
         c1, c2, c3 = st.columns(3)
         c1.metric("Last Reported EPS", f"{eps_2024:.2f}" if eps_valid else "N/A")
         c2.metric(
-            "Industry Median P/E",
+            "2024 Median P/E",
             f"{industry_pe_avg:.2f}" if not np.isnan(industry_pe_avg) else "N/A",
         )
         c3.metric(
@@ -292,15 +296,29 @@ with tab2:
         industry = company_data.loc[idx, "Industry"]
 
         # ── Logo & header ────────────────────────────────────────────
-        info = get_ticker_info(ticker_input.upper())
-        if not info:
-            st.warning("⚠️ Couldn't fetch backtest data (rate limit). Please try again in a minute.")
-            st.stop()
-        website = info.get("website", "")
-        domain = urllib.parse.urlparse(website).netloc
-        logo_url = info.get("logo_url") or (
-            f"https://logo.clearbit.com/{domain}" if domain else None
-        )
+        try:
+            ticker_obj = yf.Ticker(ticker_input.upper())
+            info = ticker_obj.info
+            website = info.get("website", "")
+            domain = urllib.parse.urlparse(website).netloc
+            logo_url = info.get("logo_url") or (
+                f"https://logo.clearbit.com/{domain}" if domain else None
+            )
+        except YFRateLimitError:
+            st.error("⚠️ Unable to fetch data from Yahoo Finance due to rate limits. Please try again later.")
+            info = {}
+            logo_url = None
+        except Exception as e:
+            st.error(f"⚠️ An unexpected error occurred: {str(e)}")
+            info = {}
+            logo_url = None
+        # ticker_obj = yf.Ticker(ticker_input.upper())
+        # info = ticker_obj.info
+        # website = info.get("website", "")
+        # domain = urllib.parse.urlparse(website).netloc
+        # logo_url = info.get("logo_url") or (
+        #     f"https://logo.clearbit.com/{domain}" if domain else None
+        # )
 
         col1, col2 = st.columns([1, 6])
         with col1:
@@ -308,6 +326,36 @@ with tab2:
                 st.image(logo_url, width=50)
         with col2:
             st.subheader(f"Details for: {ticker_input}")
+        try:
+    # Get relevant price data
+            eps_2024 = eps_data.loc[idx, 2024] if 2024 in eps_data.columns else None
+            # Fetch the last value from the Median P/E Array safely
+            median_pe_array = gsubind_to_median_pe.get(gsubind_data[idx], [])
+            median_pe_2024 = None
+            if median_pe_array is not None and len(median_pe_array) > 0:
+                median_pe_array = np.array(median_pe_array, dtype=float)
+                if not np.all(np.isnan(median_pe_array)):
+                    median_pe_2024 = median_pe_array[-1]
+                
+
+    # Calculate model price
+            model_price_2024 = None
+            if eps_2024 is not None and median_pe_2024 is not None:
+                model_price_2024 = float(eps_2024) * float(median_pe_2024)
+
+    # Fetch actual price and current price
+            actual_price_2024 = actual_price_data.loc[ticker_input, 2024] if 2024 in actual_price_data.columns else None
+            current_price = info.get("regularMarketPrice", "Not fetched")
+            # Display metrics
+            st.subheader("📊 Key Valuation Inputs")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Actual Price 2024", f"${actual_price_2024:.2f}" if actual_price_2024 else "N/A")
+            c2.metric("Model Price 2025", f"${model_price_2024:.2f}" if model_price_2024 else "N/A")
+            c3.metric("Current Price", f"${current_price:.2f}" if isinstance(current_price, (int, float)) else "N/A")
+        except Exception as e:
+            st.error("⚠️ Could not calculate key valuation inputs.")
+            st.exception(e)
+            
 
         st.write(f"**Industry:** {industry}")
 
@@ -590,29 +638,44 @@ price-direction model would have correctly predicted next-year (and two-year) mo
 # ═════════════════════════════════════════════════════════════════════════════
 with tab3:
     st.title("🏢 Company Snapshot")
-    if ticker_input in ticker_data.values:
-        ticker = yf.Ticker(ticker_input.upper())
-        info   = get_ticker_info(ticker_input.upper())
-        if not info:
-            st.warning("⚠️ Couldn't fetch company data (rate limit). Try again in a minute.")
-            st.stop()
 
+    if ticker_input in ticker_data.values:
         try:
+            ticker = yf.Ticker(ticker_input.upper())
+            info = ticker.info
             company_name = info.get("longName", ticker_input.upper())
-            website      = info.get("website", "")
-            domain       = urllib.parse.urlparse(website).netloc
-            logo_url     = info.get("logo_url") or (
+            website = info.get("website", "")
+            domain = urllib.parse.urlparse(website).netloc
+            logo_url = info.get("logo_url") or (
                 f"https://logo.clearbit.com/{domain}" if domain else None
             )
+        except YFRateLimitError:
+            st.error("⚠️ Unable to fetch company data due to rate limits. Please try again later.")
+            info = {}
+            logo_url = None
+            company_name = ticker_input.upper()
+            website = "Not fetched"
+        except Exception as e:
+            st.error(f"⚠️ An unexpected error occurred: {str(e)}")
+            info = {}
+            logo_url = None
+            company_name = ticker_input.upper()
+            website = "Not fetched"
 
-            col1, col2 = st.columns([1, 10])
-            with col1:
-                if logo_url:
-                    st.image(logo_url, width=50)
-            with col2:
-                st.subheader(f"{company_name} ({ticker_input.upper()})")
+        # Display company logo and name
+        col1, col2 = st.columns([1, 10])
+        with col1:
+            if logo_url:
+                st.image(logo_url, width=50)
+        with col2:
+            st.subheader(f"{company_name} ({ticker_input.upper()})")
 
-            # ── Price chart range selector ───────────────────────────
+        # Display website and earnings date
+        st.markdown(f"**Website:** {website or 'Not fetched'}")
+        st.markdown(f"📅 **Next Earnings Date:** {info.get('earningsDate', ['N/A'])[0]}")
+
+        # Handle stock price chart
+        try:
             interval_map = {
                 "1 Day": "1d",
                 "5 Days": "5d",
@@ -627,16 +690,22 @@ with tab3:
                 "📈 Select Time Range", list(interval_map.keys()), index=0
             )
             selected_interval = interval_map[interval_label]
+
+            # Fetch historical price data
             hist = (
                 ticker.history(period="1d", interval="5m")
                 if selected_interval == "1d"
                 else ticker.history(period=selected_interval)
             )
 
+            # Plot stock price chart
             fig_snap = go.Figure()
             fig_snap.add_trace(
                 go.Scatter(
-                    x=hist.index, y=hist["Close"], mode="lines", name="Close Price"
+                    x=hist.index,
+                    y=hist["Close"],
+                    mode="lines",
+                    name="Close Price"
                 )
             )
             fig_snap.update_layout(
@@ -646,19 +715,22 @@ with tab3:
                 yaxis_title="Price ($)",
             )
             st.plotly_chart(fig_snap, use_container_width=True)
+        except YFRateLimitError:
+            st.error("⚠️ Too many requests to Yahoo Finance. Please try again later.")
 
-            # ── Key metrics grid ────────────────────────────────────
+        except Exception as e:
+            st.error("⚠️ Could not load stock price data.")
+            st.exception(e)
+
+        # Display key metrics
+        try:
             st.markdown("### 🧾 Key Metrics")
 
             def safe_fmt(val, pct=False):
                 if val is None or val == "N/A":
                     return "N/A"
                 return (
-                    f"{val*100:.2f}%"
-                    if pct
-                    else f"${val:.2f}"
-                    if isinstance(val, (int, float))
-                    else val
+                    f"{val*100:.2f}%" if pct else f"${val:.2f}" if isinstance(val, (int, float)) else val
                 )
 
             grid_data = [
@@ -695,15 +767,17 @@ with tab3:
                 + "</div>"
             )
             st.markdown(html, unsafe_allow_html=True)
+        except Exception as e:
+            st.error("⚠️ Could not load key metrics.")
+            st.exception(e)
 
-            # ── Company overview ────────────────────────────────────
+        # Display company overview
+        try:
             st.markdown("### 🏢 Company Overview")
             st.info(info.get("longBusinessSummary", "No description available."))
-            st.markdown(f"📅 **Next Earnings Date**: {info.get('earningsDate', ['N/A'])[0]}")
-            st.caption("📌 Data powered by Yahoo Finance")
-
         except Exception as e:
-            st.error("Could not load company data.")
+            st.error("⚠️ Could not load company overview.")
             st.exception(e)
+
     else:
         st.error("❌ Ticker not found. Please check your selection.")
