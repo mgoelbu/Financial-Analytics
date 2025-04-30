@@ -7,10 +7,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import yfinance as yf
-from yfinance import YFRateLimitError
+from yfinance.exceptions import YFRateLimitError
 import plotly.graph_objects as go
 import urllib.parse
 import time
+
 
 
 @st.cache_data(show_spinner=False)
