@@ -2,17 +2,15 @@
 streamlit_app.py  –  Equity Insight Workbench
 Cleaned up with consistent 4-space indentation.
 """
-
-
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import yfinance as yf
+from yfinance import YFRateLimitError
 import plotly.graph_objects as go
 import urllib.parse
 import time
-from yfinance import YFRateLimitError
 
 
 @st.cache_data(show_spinner=False)
