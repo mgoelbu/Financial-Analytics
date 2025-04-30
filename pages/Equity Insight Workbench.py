@@ -578,7 +578,7 @@ with tab3:
 
     if ticker_input in ticker_data.values:
         ticker = yf.Ticker(ticker_input.upper())
-        info = get_ticker_info(ticker_input.upper()
+        info = get_ticker_info(ticker_input.upper())
         try:
             
             company_name = info.get("longName", ticker_input.upper())
